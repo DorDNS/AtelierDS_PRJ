@@ -1,0 +1,7 @@
+feedparser
+requests
+pandas
+matplotlib
+seaborn
+scikit-learn
+plotly
