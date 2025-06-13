@@ -18,3 +18,19 @@ pip install -r requirements.txt
 ```bash
 python scripts/main.py
 ```
+
+# Données brutes (non incluses dans le repo)
+
+Les dossiers `Avis/`, `alertes/`, `mitre/` et `first/` contiennent des centaines de fichiers JSON fournis par l'enseignant.
+
+Pour alléger le dépôt GitHub, ces fichiers **ne sont pas versionnés** (voir `.gitignore`).
+
+Merci de copier manuellement le dossier `data_pour_TD_final/` dans ce dossier `data/raw/` en respectant l’arborescence :
+
+```
+data/raw/
+├── Avis/
+├── alertes/
+├── mitre/
+└── first/
+```
