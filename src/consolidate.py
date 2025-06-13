@@ -1,1 +1,1 @@
-# Création du DataFrame final
+# Lier les données extraites (extract_cves.py) avec les JSON de mitre/ et first/ pour former le DataFrame

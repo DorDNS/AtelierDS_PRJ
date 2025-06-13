@@ -1,1 +1,1 @@
-# Extraction des CVE des bulletins
+# Parcourir les fichiers JSON du dossier Avis/ et alertes/ pour en extraire les CVE + métadonnées
