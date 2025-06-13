@@ -19,7 +19,7 @@ pip install -r requirements.txt
 python scripts/main.py
 ```
 
-# Données brutes (non incluses dans le repo)
+## Données brutes (non incluses dans le repo)
 
 Les dossiers `Avis/`, `alertes/`, `mitre/` et `first/` contiennent des centaines de fichiers JSON fournis par l'enseignant.
 
