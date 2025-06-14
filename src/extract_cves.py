@@ -1,55 +1,68 @@
-# Parcourir les fichiers JSON du dossier Avis/ et alertes/ pour en extraire les CVE + métadonnées
+"""
+Parcourt les dossiers Avis/ et alertes/ et extrait les CVE + métadonnées
+(inclut désormais la date de clôture pour calculer days_open).
+"""
 
 import os
 import json
 from datetime import datetime
+from typing import List, Dict
 
-def parse_file(path, type_bulletin):
-    with open(path, encoding='utf-8') as f:
+
+def parse_file(path: str, type_bulletin: str) -> List[Dict]:
+    """Retourne une liste d’entrées (une par CVE) pour le fichier donné."""
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
-    # Champs de base
-    id_anssi = data.get("reference")
-    titre = data.get("title", "")
-    revisions = data.get("revisions", [])
-    date = revisions[0]["revision_date"][:10] if revisions else None
-    lien = None
+    # --- champs ANSSI ---
+    id_anssi   = data.get("reference")
+    titre      = data.get("title", "")
+    revisions  = data.get("revisions", [])
+    date       = revisions[0]["revision_date"][:10] if revisions else None
+    closed_at  = data.get("closed_at")              # ★ nouveau
+    lien       = None
 
-    # Lien vers le bulletin d'origine
     for link in data.get("links", []):
-        if "cert.ssi.gouv.fr" in link["url"]:
+        if "cert.ssi.gouv.fr" in link.get("url", ""):
             lien = link["url"]
             break
 
-    # Extraire les CVE
+    # --- CVE ---
     cves = [cve["name"] for cve in data.get("cves", [])]
 
     entries = []
     for cve in cves:
-        entries.append({
-            "id_anssi": id_anssi,
-            "type": type_bulletin,
-            "titre": titre,
-            "date": date,
-            "lien": lien,
-            "cve": cve
-        })
-
+        entries.append(
+            {
+                "id_anssi":  id_anssi,
+                "type":      type_bulletin,
+                "titre":     titre,
+                "date":      date,
+                "closed_at": closed_at,   # ★
+                "lien":      lien,
+                "cve":       cve,
+            }
+        )
     return entries
 
-def extract_all_entries(avis_dir="data/raw/Avis", alertes_dir="data/raw/alertes"):
-    all_entries = []
 
-    # Parcourir les fichiers d'avis
+def extract_all_entries(
+    avis_dir: str = "data/raw/Avis",
+    alertes_dir: str = "data/raw/alertes",
+) -> List[Dict]:
+    """Retourne la liste exhaustive des CVE issues des dossiers Avis et alertes."""
+    all_entries: List[Dict] = []
+
+    # Avis
     for filename in os.listdir(avis_dir):
         path = os.path.join(avis_dir, filename)
-        if os.path.isfile(path) and not filename.startswith('.'):
+        if os.path.isfile(path) and not filename.startswith("."):
             all_entries.extend(parse_file(path, "avis"))
 
-    # Parcourir les fichiers d'alertes
+    # Alertes
     for filename in os.listdir(alertes_dir):
         path = os.path.join(alertes_dir, filename)
-        if os.path.isfile(path) and not filename.startswith('.'):
+        if os.path.isfile(path) and not filename.startswith("."):
             all_entries.extend(parse_file(path, "alerte"))
 
     return all_entries

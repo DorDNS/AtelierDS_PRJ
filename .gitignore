@@ -5,3 +5,5 @@ data/raw/Avis/
 data/raw/alertes/
 data/raw/mitre/
 data/raw/first/
+data/processed/
+outputs/
