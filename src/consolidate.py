@@ -127,6 +127,10 @@ def build_dataframe(
             cwe      = pt[0].get("cweId") or pt[0].get("description")
             cwe_desc = pt[0].get("description")
 
+        # ---- Nombre de références CVE --------------------------------
+        references = cna.get("references", [])
+        n_cve_refs = len(references) if references else 0
+
         # ---- EPSS ----------------------------------------------------
         epss_score = epss_percentile = None
         if epss_path.exists():
@@ -178,6 +182,7 @@ def build_dataframe(
                     "cvss_sev":       base_severity,
                     "cwe":            cwe,
                     "cwe_description":cwe_desc,
+                    "n_cve_refs":     n_cve_refs,
                     "cve_pub":        cve_pub,
                     "lag_anssi_days": lag_anssi,
                     # ─── EPSS ───────────────────────────────────
