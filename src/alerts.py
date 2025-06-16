@@ -86,6 +86,3 @@ def envoyer_email_test():
         print("✅ Email de test envoyé avec succès.")
     except Exception as e:
         print(f"❌ Échec de l'envoi de l'email : {e}")
-
-
-envoyer_email_test()
