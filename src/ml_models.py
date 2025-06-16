@@ -1,9 +1,8 @@
-# ml_models.py
-
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
@@ -13,7 +12,44 @@ import seaborn as sns
 def load_data(csv_path: str) -> pd.DataFrame:
     return pd.read_csv(csv_path)
 
-def run_kmeans(df: pd.DataFrame, n_clusters: int = 4):
+def evaluate_kmeans_k(df: pd.DataFrame, max_k: int = 6, sample_size: int = 3000):
+    df_clust = df.dropna(subset=["cvss_score", "epss_score", "epss_percentile", "days_open"])
+
+    if len(df_clust) > sample_size:
+        df_clust = df_clust.sample(n=sample_size, random_state=42)
+
+    X = df_clust[["cvss_score", "epss_score", "epss_percentile", "days_open"]]
+    X_scaled = StandardScaler().fit_transform(X)
+
+    inertias = []
+    silhouettes = []
+
+    for k in range(2, max_k + 1):
+        model = KMeans(n_clusters=k, random_state=0)
+        labels = model.fit_predict(X_scaled)
+        inertias.append(model.inertia_)
+
+        score = silhouette_score(X_scaled, labels)
+        silhouettes.append(score)
+
+    plt.figure(figsize=(12, 5))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(range(2, max_k + 1), inertias, marker='o')
+    plt.title("Méthode du coude (inertie)")
+    plt.xlabel("Nombre de clusters k")
+    plt.ylabel("Inertie")
+
+    plt.subplot(1, 2, 2)
+    plt.plot(range(2, max_k + 1), silhouettes, marker='o', color='orange')
+    plt.title("Score silhouette moyen")
+    plt.xlabel("Nombre de clusters k")
+    plt.ylabel("Silhouette")
+
+    plt.tight_layout()
+    plt.show()
+
+def run_kmeans(df: pd.DataFrame, n_clusters: int = 3):
     df_clust = df.dropna(subset=["cvss_score", "epss_score", "epss_percentile", "days_open"])
     X = df_clust[["cvss_score", "epss_score", "epss_percentile", "days_open"]]
     X_scaled = StandardScaler().fit_transform(X)
