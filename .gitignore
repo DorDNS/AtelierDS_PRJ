@@ -7,3 +7,4 @@ data/raw/mitre/
 data/raw/first/
 data/processed/
 outputs/
+.env
