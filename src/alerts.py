@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 import os
 from dotenv import load_dotenv
 import pandas as pd
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -29,17 +30,20 @@ def filtrer_alertes(df, produits_cibles, seuil_cvss=7.0, seuil_epss=0.7):
 
 def creer_message_email(df_filtre):
     """
-    Crée le contenu HTML/textuel du mail à partir du DataFrame filtré.
+    Crée le contenu textuel du mail à partir du DataFrame filtré.
     """
     if df_filtre.empty:
-        return "Aucune alerte critique à signaler pour vos produits."
+        return "Aucune alerte critique récente à signaler pour vos produits."
 
-    message = "Alertes de vulnérabilités critiques pour vos produits:\n\n"
-    for idx, row in df_filtre.iterrows():
-        message += f"- {row['CVE']} ({row['Base Severity']}): {row['Description']}\n"
-        message += f"  Produit : {row['Produit']}\n"
-        message += f"  Score CVSS : {row['Score CVSS']} | Score EPSS : {row['Score EPSS']}\n"
-        message += f"  Plus d'infos : {row['Lien']}\n\n"
+    message = "🛡️ Alertes de vulnérabilités critiques détectées ces deux derniers jours :\n\n"
+    for _, row in df_filtre.iterrows():
+        message += f"🔒 CVE : {row['cve']} ({row['cvss_sev']})\n"
+        message += f"Produit : {row['produit']} | Score CVSS : {row['cvss_score']} | Score EPSS : {row['epss_score']}\n"
+        message += f"Titre : {row['titre']}\n"
+        message += f"Description : {row['description'][:200]}...\n"
+        message += f"Date : {row['date'].strftime('%Y-%m-%d')}\n"
+        message += f"Lien : {row['lien']}\n"
+        message += "\n"
     return message
 
 def envoyer_email(subject, body, sender, receiver, smtp_server, smtp_port, password):
@@ -64,25 +68,22 @@ def envoyer_email(subject, body, sender, receiver, smtp_server, smtp_port, passw
         print(f"Erreur lors de l'envoi de l'email: {e}")
 
 
+def charger_et_filtrer_donnees(csv_path, produits_cibles, seuil_cvss=7.0):
+    """
+    Charge le CSV, filtre les alertes critiques récentes et les produits cibles.
+    """
+    # Chargement du CSV avec parsing de la colonne date
+    df = pd.read_csv(csv_path, parse_dates=["date"])
 
+    # Filtrer sur les deux derniers jours
+    maintenant = datetime.now()
+    il_y_a_2_jours = maintenant - timedelta(days=2)
+    df_recent = df[df["date"] >= il_y_a_2_jours]
 
+    # Filtrer les vulnérabilités critiques et produits cibles
+    df_filtre = df_recent[
+        (df_recent["cvss_score"] >= seuil_cvss) &
+        (df_recent["produit"].isin(produits_cibles))
+    ]
 
-def envoyer_email_test():
-    sujet = "✅ Test d'envoi d'email avec Python"
-    corps = "Bonjour,\n\nCeci est un test automatique de l'envoi d'email depuis un script Python avec SMTP Gmail.\n\n– Script terminé avec succès 🚀"
-
-    msg = MIMEMultipart()
-    msg['From'] = EMAIL_SENDER
-    msg['To'] = EMAIL_RECEIVER
-    msg['Subject'] = sujet
-    msg.attach(MIMEText(corps, 'plain'))
-
-    try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        print("✅ Email de test envoyé avec succès.")
-    except Exception as e:
-        print(f"❌ Échec de l'envoi de l'email : {e}")
+    return df_filtre
