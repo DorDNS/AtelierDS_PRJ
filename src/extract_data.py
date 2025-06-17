@@ -3,6 +3,7 @@ import concurrent.futures as cf, datetime as dt, functools, re, time
 from pathlib import Path
 from typing import Dict, List, Any
 from urllib.parse import urljoin, urlparse
+import csv
 
 import pandas as pd
 import requests
@@ -177,8 +178,9 @@ def build_dataframe(sections=("Alerte","Avis"))->pd.DataFrame:
         cves  = [c["name"] for c in j.get("cves",[])] or CVE_RX.findall(str(j)) or [None]
         cert_desc = single_line(j.get("description",""))
         closed_at = extract_closed(j)
+        n_revisions = len(j.get("revisions", []))
 
-        meta.append((sec,bid,title,date,url,cves,cert_desc,closed_at))
+        meta.append((sec, bid, title, date, url, cves, cert_desc, closed_at, n_revisions))
         cve_set.update([c for c in cves if c])
 
     print(f"→ {len(meta):,} bulletins ≥2020   ·   {len(cve_set):,} CVE uniques\n")
@@ -199,7 +201,7 @@ def build_dataframe(sections=("Alerte","Avis"))->pd.DataFrame:
     # consolidation
     today=pd.Timestamp("now").normalize()
     rows=[]
-    for sec,bid,title,date,url,cves,cert_desc,closed_at in meta:
+    for sec,bid,title,date,url,cves,cert_desc,closed_at,n_revisions in meta:
         closed_at=closed_at or today
         for cve in cves:
             (cvss_score,cvss_sev,cwe,cwe_desc,
@@ -217,7 +219,7 @@ def build_dataframe(sections=("Alerte","Avis"))->pd.DataFrame:
                 rows.append({
                     "id_anssi":bid, "type":sec.lower(), "titre":title,
                     "date":date.date(), "closed_at":closed_at.date() if pd.notna(closed_at) else None,
-                    "lien":url, "cve":cve, "description":description,
+                    "lien":url, "cve":cve, "description":description, "n_revisions":n_revisions,
                     "cvss_score":cvss_score, "cvss_sev":cvss_sev or cvss_band(cvss_score),
                     "cwe":cwe, "cwe_description":cwe_desc,
                     "n_cve_refs":n_refs, "cve_pub":cve_pub, "lag_anssi_days":lag,
@@ -240,12 +242,18 @@ def build_dataframe(sections=("Alerte","Avis"))->pd.DataFrame:
 
 # ─────────── run ───────────
 def main():
-    t0=time.perf_counter()
-    df=build_dataframe()
+    t0 = time.perf_counter()
+    df = build_dataframe()
     if not df.empty:
-        df.to_csv(CSV_PATH,index=False,encoding="utf-8")
+        df.to_csv(
+            CSV_PATH,
+            index=False,
+            encoding="utf-8",
+            quoting=csv.QUOTE_NONNUMERIC,
+            quotechar='"'
+        )
         print(f"{len(df):,} lignes écrites dans {CSV_PATH.name} "
               f"( {time.perf_counter()-t0:.1f} s )")
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
