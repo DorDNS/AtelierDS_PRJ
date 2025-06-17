@@ -18,6 +18,7 @@ def parse_file(path: str, type_bulletin: str) -> List[Dict]:
     id_anssi   = data.get("reference")
     titre      = data.get("title", "")
     revisions  = data.get("revisions", [])
+    n_revisions = len(revisions)
     date       = revisions[0]["revision_date"][:10] if revisions else None
     closed_at  = data.get("closed_at")              # ★ nouveau
     lien       = None
@@ -37,6 +38,7 @@ def parse_file(path: str, type_bulletin: str) -> List[Dict]:
                 "id_anssi":  id_anssi,
                 "type":      type_bulletin,
                 "titre":     titre,
+                "n_revisions": n_revisions,
                 "date":      date,
                 "closed_at": closed_at,   # ★
                 "lien":      lien,

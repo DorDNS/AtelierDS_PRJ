@@ -6,3 +6,4 @@ data/raw_flux/
 data/processed/
 outputs/
 .env
+certfr_cache/

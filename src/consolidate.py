@@ -172,6 +172,7 @@ def build_dataframe(
                     "id_anssi":   e.get("id_anssi"),
                     "type":       e.get("type"),
                     "titre":      e.get("titre"),
+                    "n_revisions": e.get("n_revisions") or [],
                     "date":       e.get("date"),
                     "closed_at":  e.get("closed_at"),
                     "lien":       e.get("lien") or lien_dyn,
