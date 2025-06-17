@@ -118,6 +118,27 @@ def RandomForest(df: pd.DataFrame) -> pd.DataFrame:
     # Afficher les résultats
     print("Bulletins sans score CVSS avec scores prédits :")
     print(df_no_cvss[["id_anssi", "n_cve_refs", "days_open", "epss_score", "predicted_cvss_sev"]])
+
+    
+    # Créer un histogramme initial basé sur les données existantes
+    plt.figure(figsize=(8, 6))
+    df['cvss_sev'] = df['cvss_score'].apply(map_cvss_to_class)
+    sns.countplot(data=df, x='cvss_sev', order=["LOW", "MEDIUM", "HIGH"], palette="viridis")
+    plt.title("Distribution des bulletins par cvss_sev (avant prédiction)")
+    plt.xlabel("cvss_sev")
+    plt.ylabel("Nombre de bulletins")
+    plt.show()
+
+    # Ajouter les scores prédits au DataFrame original
+    df.loc[df_no_cvss.index, "cvss_sev"] = predicted_classes
+
+    # Créer un nouvel histogramme avec les données mises à jour
+    plt.figure(figsize=(8, 6))
+    sns.countplot(data=df, x='cvss_sev', order=["LOW", "MEDIUM", "HIGH"], palette="viridis")
+    plt.title("Distribution des bulletins par cvss_sev (après prédiction)")
+    plt.xlabel("cvss_sev")
+    plt.ylabel("Nombre de bulletins")
+    plt.show()
     
 
     return df
