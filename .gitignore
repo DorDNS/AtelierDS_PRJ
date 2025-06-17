@@ -8,3 +8,4 @@ data/raw/first/
 data/processed/
 outputs/
 .env
+certfr_cache/
