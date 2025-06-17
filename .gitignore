@@ -1,10 +1,8 @@
 # Données brutes non versionnées
 __pycache__/
 *.pyc
-data/raw/Avis/
-data/raw/alertes/
-data/raw/mitre/
-data/raw/first/
+data/raw/
+data/raw_flux/
 data/processed/
 outputs/
 .env
