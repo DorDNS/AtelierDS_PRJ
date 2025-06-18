@@ -18,6 +18,7 @@ from fastapi.responses import RedirectResponse
 # --- CONFIGURATION ---
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
+CSV_PATH = "data/processed/final_dataset.csv"
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
@@ -31,11 +32,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 user_preferences = {
     "email": "matthieu.burkovic@efrei.net",
     "cvss": 7.0,
-    "epss": 0.5
+    "epss": 0.5,
+    "vendor": "Tous"
 }
 
 # --- CHARGEMENT ET FILTRAGE ---
-def charger_et_filtrer_donnees(csv_path, seuil_cvss, seuil_epss):
+def charger_et_filtrer_donnees(csv_path, seuil_cvss, seuil_epss, vendor=None):
     try:
         df = pd.read_csv(csv_path, parse_dates=["date"])
         date_limite = datetime(datetime.now().year, 1, 1)
@@ -44,6 +46,8 @@ def charger_et_filtrer_donnees(csv_path, seuil_cvss, seuil_epss):
             (df_recent["cvss_score"] >= seuil_cvss) &
             (df_recent["epss_score"] >= seuil_epss)
         ]
+        if vendor and vendor != "Tous":
+            df_filtre = df_filtre[df_filtre["vendor"] == vendor]
         return df_filtre
     except Exception as e:
         print(f"Erreur de chargement CSV : {e}")
@@ -111,11 +115,13 @@ scheduler.start()
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request):
     df = charger_et_filtrer_donnees(
-        "data/processed/final_dataset.csv",
+        CSV_PATH,
         user_preferences['cvss'],
-        user_preferences['epss']
+        user_preferences['epss'],
+        user_preferences.get('vendor') 
     )
     return templates.TemplateResponse("dashboard.html", {"request": request, "df": df.to_dict(orient="records")})
+
 
 
 
@@ -135,25 +141,51 @@ async def send_alert_mail(cve: str = Form(...)):
 
     return RedirectResponse(url="/", status_code=303)
 
-@app.get("/preferences", response_class=HTMLResponse)
-def get_preferences(request: Request):
-    # Affiche le formulaire avec les valeurs actuelles des préférences
-    return templates.TemplateResponse("preferences.html", {
-        "request": request,
-        "email": user_preferences["email"],
-        "cvss": user_preferences["cvss"],
-        "epss": user_preferences["epss"],
-    })
+@app.get("/preferences")
+async def get_preferences(request: Request):
+    vendors = charger_tous_les_vendors(CSV_PATH) 
+    vendors = sorted(vendors)
+    if "" not in vendors:
+        vendors = [""] + vendors
+
+    return templates.TemplateResponse(
+        "preferences.html",
+        {
+            "request": request,
+            "email": user_preferences.get("email", ""),
+            "cvss": user_preferences.get("cvss", 7.0),
+            "epss": user_preferences.get("epss", 0.5),
+            "selected_vendor": user_preferences.get("vendor", ""),
+            "vendors": vendors,
+            "active_tab": "preferences"
+        }
+    )
 
 @app.post("/preferences")
 async def update_preferences(
     email: str = Form(...),
     cvss: float = Form(...),
-    epss: float = Form(...)
+    epss: float = Form(...),
+    vendor: str = Form("")  
 ):
     # Met à jour les préférences en mémoire
     user_preferences["email"] = email
     user_preferences["cvss"] = cvss
     user_preferences["epss"] = epss
+    user_preferences["vendor"] = vendor  
 
     return RedirectResponse(url="/preferences", status_code=303)
+
+
+def charger_tous_les_vendors(csv_path):
+    import pandas as pd
+    try:
+        df = pd.read_csv(csv_path)
+        
+        vendors = df['vendor'].dropna().map(str.strip).unique()
+        vendors = sorted(vendors)
+        return vendors
+    except Exception as e:
+        print(f"Erreur chargement vendors : {e}")
+        return []
+
