@@ -1,45 +1,78 @@
 #!/usr/bin/env python3
-import sys
-import os
-import json
+import sys, os, json, csv, time
+from pathlib import Path
 
-# 1️⃣ Ajouter la racine du projet au chemin d’import
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, PROJECT_ROOT)
+import pandas as pd
 
+# ── Setup PYTHONPATH ─────────────────────────────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+# ── Imports extraction & consolidation ──────────────────────────────────
 from src.extract_cves import extract_all_entries
-from src.consolidate import build_dataframe
+from src.consolidate    import build_dataframe as consolidate_raw
+from src.extract_data   import build_dataframe as consolidate_flux
 
 def main():
-    print("🚀 Lancement du pipeline ANSSI simplifié…")
+    t0 = time.perf_counter()
+    print("🚀 Pipeline ANSSI complet…\n")
 
-    # Étape 1 : extraction
-    all_entries = extract_all_entries(
-        avis_dir=os.path.join(PROJECT_ROOT, "data/raw/Avis"),
-        alertes_dir=os.path.join(PROJECT_ROOT, "data/raw/alertes")
+    # ── Dirs & fichiers ────────────────────────────────────────────────
+    RAW_AVIS = PROJECT_ROOT / "data" / "raw" / "Avis"
+    RAW_ALE  = PROJECT_ROOT / "data" / "raw" / "alertes"
+    OUT_DIR  = PROJECT_ROOT / "data" / "processed"
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    OLD_CSV   = OUT_DIR / "old_final_dataset.csv"
+    FLUX_CSV  = OUT_DIR / "flux_final_dataset.csv"
+    FINAL_CSV = OUT_DIR / "final_dataset.csv"
+
+    # ── Étape 1 : raw extraction + MITRE/EPSS ───────────────────────────
+    print("[1/3] Extraction ANSSI ‘raw’…")
+    entries = extract_all_entries(str(RAW_AVIS), str(RAW_ALE))
+    print(f"    • {len(entries):,} bulletins⇄CVE extraits")
+    # json intermédiaire
+    with open(OUT_DIR / "entries.json", "w", encoding="utf-8") as f:
+        json.dump(entries, f, ensure_ascii=False, indent=2)
+    print("    • entries.json sauvegardé")
+
+    print("    • Consolidation MITRE+EPSS (raw)…")
+    df_old = consolidate_raw(
+        entries=entries,
+        mitre_dir=str(PROJECT_ROOT / "data" / "raw" / "mitre"),
+        epss_dir =str(PROJECT_ROOT / "data" / "raw" / "first"),
     )
-    print(f"📥 {len(all_entries)} bulletins + CVE extraits")
+    if "versions" in df_old.columns:
+        df_old = df_old.drop(columns=["versions"])
+    df_old.to_csv(OLD_CSV, index=False, encoding="utf-8",
+                  quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+    print(f"    ✅ {OLD_CSV.name} ({len(df_old):,} lignes)\n")
 
-    # Sauvegarde JSON intermédiaire
-    out_json_dir = os.path.join(PROJECT_ROOT, "data/processed")
-    os.makedirs(out_json_dir, exist_ok=True)
-    entries_path = os.path.join(out_json_dir, "entries.json")
-    with open(entries_path, "w", encoding="utf-8") as f:
-        json.dump(all_entries, f, ensure_ascii=False, indent=2)
-    print(f"✅ Entrées brutes sauvegardées → {entries_path}")
+    # ── Étape 2 : flux RSS/API extraction ────────────────────────────────
+    print("[2/3] Extraction via flux RSS/API…")
+    df_flux = consolidate_flux()
+    if "versions" in df_flux.columns:
+        df_flux = df_flux.drop(columns=["versions"])
+    df_flux.to_csv(FLUX_CSV, index=False, encoding="utf-8",
+                   quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+    print(f"    ✅ {FLUX_CSV.name} ({len(df_flux):,} lignes)\n")
 
-    # Étape 2 : consolidation MITRE + EPSS
-    df = build_dataframe(
-        entries=all_entries,
-        mitre_dir=os.path.join(PROJECT_ROOT, "data/raw/mitre"),
-        epss_dir=os.path.join(PROJECT_ROOT, "data/raw/first")
-    )
-    print(f"🧩 {len(df)} lignes consolidées")
+    # ── Étape 3 : concat + dé-dup → final_dataset.csv ────────────────────
+    print("[3/3] Concaténation & dé-duplication…")
+    df1 = pd.read_csv(OLD_CSV,  parse_dates=["date","closed_at","cve_pub"], keep_default_na=False)
+    df2 = pd.read_csv(FLUX_CSV, parse_dates=["date","closed_at","cve_pub"], keep_default_na=False)
 
-    # Sauvegarde finale en CSV
-    out_csv = os.path.join(out_json_dir, "final_dataset.csv")
-    df.to_csv(out_csv, index=False, encoding="utf-8")
-    print(f"✅ Dataset final sauvegardé → {out_csv}")
+    total_before = len(df1) + len(df2)
+    df_mix = pd.concat([df1, df2], ignore_index=True)
+    df_mix = df_mix.drop_duplicates().reset_index(drop=True)
+    total_after = len(df_mix)
+    added = total_after - len(df_flux)
+
+    df_mix.to_csv(FINAL_CSV, index=False, encoding="utf-8",
+                  quotechar='"', quoting=csv.QUOTE_ALL)
+    print(f"    • {total_before:,} lignes lues → {total_after:,} après dé-dup (+{added:,})")
+    print(f"\n✅ Pipeline achevé en {time.perf_counter()-t0:.1f}s")
+    print(f"   • {OLD_CSV.name}\n   • {FLUX_CSV.name}\n   • {FINAL_CSV.name}")
 
 if __name__ == "__main__":
     main()
