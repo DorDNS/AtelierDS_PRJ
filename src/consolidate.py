@@ -1,10 +1,3 @@
-"""
-consolidate.py  –  v2
----------------------
-Fusionne les entrées ANSSI (avis/alertes) avec les méta-données MITRE & EPSS,
-enrichit le jeu : CVSS_sev, percentile EPSS, date publi CVE, délai de réaction
-ANSSI, normalisation vendor ; calcule days_open puis renvoie un DataFrame.
-"""
 from __future__ import annotations
 
 import json, os, csv
@@ -13,7 +6,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-# ───────────────────────── utilitaires ──────────────────────────
+# utilitaires
 def safe_get(d: Any, keys: List[Any], default=None):
     """Accès sécurisé à une structure imbriquée."""
     for k in keys:
@@ -24,7 +17,7 @@ def safe_get(d: Any, keys: List[Any], default=None):
     return d
 
 
-# --- petite table de correspondance Vendor ---------------------------------
+# table de correspondance Vendor
 _DEFAULT_VENDOR_MAP = {
     #   alias (minuscule)      forme canonique
     "microsoft corporation":   "Microsoft",
@@ -38,10 +31,6 @@ _DEFAULT_VENDOR_MAP = {
     "ibm":                     "IBM",
 }
 def load_vendor_aliases(csv_path: Path | str | None = None) -> Dict[str, str]:
-    """
-    Charge un CSV 2 colonnes alias,canonique si présent,
-    sinon renvoie le mapping par défaut.
-    """
     if csv_path and Path(csv_path).exists():
         alias_map: Dict[str, str] = {}
         with open(csv_path, newline="", encoding="utf-8") as f:
@@ -76,7 +65,6 @@ def clean_row(row: Dict) -> Dict:
             out[k] = v
     return out
 
-# ───────────────────── fonction principale ──────────────────────
 def build_dataframe(
     entries: List[Dict],
     mitre_dir: str = "data/raw/mitre",
@@ -96,7 +84,7 @@ def build_dataframe(
         # fallback URL bulletin
         lien_dyn = f"https://www.cert.ssi.gouv.fr/{'alerte' if e.get('type')=='alerte' else 'avis'}/{e.get('id_anssi')}/"
 
-        # ─── JSON MITRE (obligatoire) ──────────────────────────────────
+        # JSON MITRE
         if not mitre_path.exists():
             continue
         try:
@@ -108,7 +96,7 @@ def build_dataframe(
 
         desc = next((d["value"] for d in cna.get("descriptions", []) if d.get("lang") == "en"), None)
 
-        # ---- CVSS (v3 prioritaire) -----------------------------------
+        # CVSS
         cvss_score = base_severity = None
         for metric in cna.get("metrics", []):
             for key in ("cvssV3_1", "cvssV3_0", "cvssV3", "cvssV2"):
@@ -120,18 +108,18 @@ def build_dataframe(
             if cvss_score is not None:
                 break
 
-        # ---- CWE -----------------------------------------------------
+        # CWE
         cwe = cwe_desc = None
         pt = safe_get(cna, ["problemTypes", 0, "descriptions"], [])
         if pt:
             cwe      = pt[0].get("cweId") or pt[0].get("description")
             cwe_desc = pt[0].get("description")
 
-        # ---- Nombre de références CVE --------------------------------
+        # Nombre de références CVE
         references = cna.get("references", [])
         n_cve_refs = len(references) if references else 0
 
-        # ---- EPSS ----------------------------------------------------
+        # EPSS
         epss_score = epss_percentile = None
         if epss_path.exists():
             try:
@@ -141,10 +129,10 @@ def build_dataframe(
             except Exception:
                 pass
 
-        # ---- Date publication CVE & lag ------------------------------
+        # Date publication CVE & lag
         cve_pub = safe_get(mitre, ["cveMetadata", "datePublished"])
         if cve_pub:
-            cve_pub = cve_pub[:10]  # AAAA-MM-JJ
+            cve_pub = cve_pub[:10] 
             try:
                 lag_anssi = (
                     pd.to_datetime(e["date"][:10]) -
@@ -155,7 +143,7 @@ def build_dataframe(
         else:
             lag_anssi = None
 
-        # ---- Produits / vendors --------------------------------------
+        # Produits / vendors
         affected = cna.get("affected", []) or [{"vendor": "n/a", "product": "n/a", "versions": ["n/a"]}]
         for prod in affected:
             vendor_raw = prod.get("vendor", "n/a")
@@ -168,7 +156,7 @@ def build_dataframe(
 
             rows.append(
                 clean_row({
-                    # ─── méta ANSSI ──────────────────────────────
+                    # méta ANSSI
                     "id_anssi":   e.get("id_anssi"),
                     "type":       e.get("type"),
                     "titre":      e.get("titre"),
@@ -176,7 +164,7 @@ def build_dataframe(
                     "date":       e.get("date"),
                     "closed_at":  e.get("closed_at"),
                     "lien":       e.get("lien") or lien_dyn,
-                    # ─── méta CVE / MITRE ───────────────────────
+                    # méta CVE / MITRE
                     "cve":            cve,
                     "description":    desc,
                     "cvss_score":     cvss_score,
@@ -186,10 +174,10 @@ def build_dataframe(
                     "n_cve_refs":     n_cve_refs,
                     "cve_pub":        cve_pub,
                     "lag_anssi_days": lag_anssi,
-                    # ─── EPSS ───────────────────────────────────
+                    # EPSS
                     "epss_score":     epss_score,
                     "epss_percentile":epss_percentile,
-                    # ─── produit ────────────────────────────────
+                    # produit
                     "vendor":     vendor_raw,
                     "vendor_std": vendor_std,
                     "produit":    produit,
@@ -197,7 +185,6 @@ def build_dataframe(
                 })
             )
 
-    # ───────── DataFrame final & conversions ────────────────────────────
     df = pd.DataFrame(rows).drop_duplicates()
 
     # dates

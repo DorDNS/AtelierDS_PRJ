@@ -1,8 +1,3 @@
-"""
-Parcourt les dossiers Avis/ et alertes/ et extrait les CVE + métadonnées
-(inclut désormais la date de clôture pour calculer days_open).
-"""
-
 import os
 import json
 from datetime import datetime
@@ -10,11 +5,10 @@ from typing import List, Dict
 
 
 def parse_file(path: str, type_bulletin: str) -> List[Dict]:
-    """Retourne une liste d’entrées (une par CVE) pour le fichier donné."""
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
-    # --- champs ANSSI ---
+    # champs ANSSI
     id_anssi   = data.get("reference")
     titre      = data.get("title", "")
     revisions  = data.get("revisions", [])
@@ -28,7 +22,7 @@ def parse_file(path: str, type_bulletin: str) -> List[Dict]:
             lien = link["url"]
             break
 
-    # --- CVE ---
+    # CVE
     cves = [cve["name"] for cve in data.get("cves", [])]
 
     entries = []
@@ -52,7 +46,6 @@ def extract_all_entries(
     avis_dir: str = "data/raw/Avis",
     alertes_dir: str = "data/raw/alertes",
 ) -> List[Dict]:
-    """Retourne la liste exhaustive des CVE issues des dossiers Avis et alertes."""
     all_entries: List[Dict] = []
 
     # Avis

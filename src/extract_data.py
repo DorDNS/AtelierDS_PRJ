@@ -9,14 +9,13 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-# ─────────── chemins & sortie CSV ───────────
-# le script s’exécute depuis src/, on remonte donc d’un niveau
-ROOT_DIR   = Path(__file__).resolve().parent.parent            # racine du dépôt
+# chemins & sortie CSV
+ROOT_DIR   = Path(__file__).resolve().parent.parent            
 OUT_DIR    = ROOT_DIR / "data" / "processed"
-OUT_DIR.mkdir(parents=True, exist_ok=True)                     # crée data/processed
-CSV_PATH   = OUT_DIR / "final_dataset.csv"                     # nom imposé
+OUT_DIR.mkdir(parents=True, exist_ok=True)                     
+CSV_PATH   = OUT_DIR / "final_dataset.csv"                     
 
-# ─────────── paramètres scraping ───────────
+# paramètres scraping
 BASE_URLS = {
     "Alerte": "https://cert.ssi.gouv.fr/alerte",
     "Avis":   "https://cert.ssi.gouv.fr/avis",
@@ -24,7 +23,7 @@ BASE_URLS = {
 ROOT, TIMEOUT = "https://cert.ssi.gouv.fr", 6
 HEADERS       = {"User-Agent": "CERTFR Scraper // EFREI 2025"}
 PAGE_WORKERS, MAX_WORKERS = 10, 20
-SINCE_DATE = pd.Timestamp("2020-01-01")                        # historique ≥ 2020
+SINCE_DATE = pd.Timestamp("2020-01-01") # historique ≥ 2020
 
 CVE_RX     = re.compile(r"CVE-\d{4}-\d{4,7}")
 CVSS_BANDS = [
@@ -34,7 +33,7 @@ CVSS_BANDS = [
     (9, 11, "Critique"),
 ]
 
-# ─────────── normalisation vendor ───────────
+# normalisation vendor
 _VENDOR_MAP: Dict[str, str] = {
     "microsoft corporation": "Microsoft",
     "microsoft corp.":       "Microsoft",
@@ -48,14 +47,14 @@ _VENDOR_MAP: Dict[str, str] = {
 }
 normalize_vendor = lambda v: None if v is None else _VENDOR_MAP.get(v.lower(), v)
 
-# ─────────── sessions HTTP (sans cache disque) ───────────
+# sessions HTTP 
 SESSION = requests.Session()     # pour HTML + APIs MITRE/EPSS
 SESSION.headers.update(HEADERS)
 
 PLAIN   = requests.Session()     # pour /json/ des bulletins
 PLAIN.headers.update(HEADERS)
 
-# ─────────── helpers ───────────
+# helpers
 def page_url(sec:str,n:int): return f"{BASE_URLS[sec]}/" if n==1 else f"{BASE_URLS[sec]}/page/{n}/"
 single_line = lambda t: None if t is None else re.sub(r"\s+"," ",t).strip()
 def cvss_band(s): 
@@ -67,7 +66,7 @@ def safe_get(d:Any, keys:List, default=None):
         except (KeyError,IndexError,TypeError): return default
     return d
 
-# ---- date extraction robuste ------------------------------------
+# date extraction robuste
 def extract_date(j:dict) -> pd.Timestamp|None:
     for key in ("initial_release_date","modified_release_date","last_revision_date"):
         if key in j and j[key]:
@@ -81,7 +80,7 @@ def extract_closed(j:dict) -> pd.Timestamp|None:
     rev_last = safe_get(j, ["revisions",-1,"revision_date"])
     return pd.to_datetime(rev_last, errors="coerce")
 
-# ─────────── pagination HTML ───────────
+# pagination HTM
 def _fetch_page(sec:str,n:int):
     r = SESSION.get(page_url(sec,n),timeout=TIMEOUT)
     return n,r.status_code,r.text
@@ -103,7 +102,7 @@ def iter_bulletin_urls(sec:str):
             if stop: break
             p+=PAGE_WORKERS
 
-# ─────────── enrichissement MITRE / EPSS ───────────
+# enrichissement MITRE / EPSS
 @functools.lru_cache(maxsize=None)
 def enrich_cve(cve:str):
     try:
@@ -146,7 +145,7 @@ def enrich_cve(cve:str):
     return (cvss_score,cvss_sev,cwe,cwe_desc,
             epss_score,epss_pct,n_refs,cve_pub,products,desc)
 
-# ─────────── pipeline ───────────
+# pipeline
 def build_dataframe(sections=("Alerte","Avis"))->pd.DataFrame:
     t0=time.perf_counter()
     urls=[u for s in sections for u in iter_bulletin_urls(s)]
@@ -185,7 +184,7 @@ def build_dataframe(sections=("Alerte","Avis"))->pd.DataFrame:
 
     print(f"→ {len(meta):,} bulletins ≥2020   ·   {len(cve_set):,} CVE uniques\n")
 
-    if not meta:      # rien à traiter → DataFrame vide
+    if not meta:      # rien à traiter -> DataFrame vide
         print("Aucun bulletin dans la plage demandée.")
         return pd.DataFrame()
 
@@ -240,7 +239,6 @@ def build_dataframe(sections=("Alerte","Avis"))->pd.DataFrame:
           f"(total {time.perf_counter()-t0:.1f}s)\n")
     return df
 
-# ─────────── run ───────────
 def main():
     t0 = time.perf_counter()
     df = build_dataframe()
