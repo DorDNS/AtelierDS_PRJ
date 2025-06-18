@@ -297,102 +297,134 @@ class KMeansAnalyzer:
 
     def create_visualizations(self):
         """
-        Crée les graphiques pour visualiser les résultats
+        Crée des graphiques séparés pour visualiser les résultats
         """
-        print("\n Génération des graphiques...")
+        print("\nGénération des graphiques...")
 
-        # Configuration pour éviter les problèmes d'affichage
         plt.style.use('default')
-        fig_size = (15, 12)
 
-        # Création de la figure avec sous-graphiques
-        fig, axes = plt.subplots(2, 3, figsize=fig_size)
-        fig.suptitle('Analyse K-Means - Détermination du nombre optimal de clusters', fontsize=16, fontweight='bold')
-
-        # 1. Méthode du coude
-        ax1 = axes[0, 0]
+        # 1. Méthode du Coude
         elbow_data = self.metrics_results['elbow']
-        ax1.plot(elbow_data['k_values'], elbow_data['inertias'], 'bo-', linewidth=2, markersize=8)
-        ax1.axvline(x=elbow_data['optimal_k'], color='red', linestyle='--', alpha=0.7,
+        plt.figure(figsize=(8, 6))
+        plt.plot(elbow_data['k_values'], elbow_data['inertias'], 'bo-', linewidth=2, markersize=8)
+        plt.axvline(x=elbow_data['optimal_k'], color='red', linestyle='--', alpha=0.7,
                     label=f'K optimal = {elbow_data["optimal_k"]}')
-        ax1.set_xlabel('Nombre de clusters (K)')
-        ax1.set_ylabel('Inertie')
-        ax1.set_title('Méthode du Coude')
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
-
-        # 2. Coefficient de silhouette
-        ax2 = axes[0, 1]
-        sil_data = self.metrics_results['silhouette']
-        ax2.plot(sil_data['k_values'], sil_data['scores'], 'go-', linewidth=2, markersize=8)
-        ax2.axvline(x=sil_data['optimal_k'], color='red', linestyle='--', alpha=0.7,
-                    label=f'K optimal = {sil_data["optimal_k"]}')
-        ax2.set_xlabel('Nombre de clusters (K)')
-        ax2.set_ylabel('Score de Silhouette')
-        ax2.set_title('Coefficient de Silhouette')
-        ax2.legend()
-        ax2.grid(True, alpha=0.3)
-
-        # 3. Indice de Calinski-Harabasz
-        ax3 = axes[0, 2]
-        ch_data = self.metrics_results['calinski_harabasz']
-        ax3.plot(ch_data['k_values'], ch_data['scores'], 'mo-', linewidth=2, markersize=8)
-        ax3.axvline(x=ch_data['optimal_k'], color='red', linestyle='--', alpha=0.7,
-                    label=f'K optimal = {ch_data["optimal_k"]}')
-        ax3.set_xlabel('Nombre de clusters (K)')
-        ax3.set_ylabel('Score Calinski-Harabasz')
-        ax3.set_title('Indice de Calinski-Harabasz')
-        ax3.legend()
-        ax3.grid(True, alpha=0.3)
-
-        # 4. Indice de Davies-Bouldin
-        ax4 = axes[1, 0]
-        db_data = self.metrics_results['davies_bouldin']
-        ax4.plot(db_data['k_values'], db_data['scores'], 'co-', linewidth=2, markersize=8)
-        ax4.axvline(x=db_data['optimal_k'], color='red', linestyle='--', alpha=0.7,
-                    label=f'K optimal = {db_data["optimal_k"]}')
-        ax4.set_xlabel('Nombre de clusters (K)')
-        ax4.set_ylabel('Score Davies-Bouldin')
-        ax4.set_title('Indice de Davies-Bouldin')
-        ax4.legend()
-        ax4.grid(True, alpha=0.3)
-
-        # 5. Visualisation des clusters (PCA 2D)
-        ax5 = axes[1, 1]
-        if self.scaled_data.shape[1] > 2:
-            pca = PCA(n_components=2)
-            data_pca = pca.fit_transform(self.scaled_data)
-            scatter = ax5.scatter(data_pca[:, 0], data_pca[:, 1], c=self.cluster_labels, cmap='viridis', alpha=0.7)
-            ax5.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.2%} variance)')
-            ax5.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.2%} variance)')
-            ax5.set_title('Clusters (PCA 2D)')
-            plt.colorbar(scatter, ax=ax5)
-        else:
-            ax5.scatter(self.scaled_data[:, 0], self.scaled_data[:, 1], c=self.cluster_labels, cmap='viridis',
-                        alpha=0.7)
-            ax5.set_xlabel('Feature 1')
-            ax5.set_ylabel('Feature 2')
-            ax5.set_title('Clusters')
-
-        # 6. Distribution des clusters
-        ax6 = axes[1, 2]
-        cluster_counts = pd.Series(self.cluster_labels).value_counts().sort_index()
-        bars = ax6.bar(range(len(cluster_counts)), cluster_counts.values, color='skyblue', alpha=0.7)
-        ax6.set_xlabel('Cluster')
-        ax6.set_ylabel('Nombre de points')
-        ax6.set_title('Distribution des points par cluster')
-        ax6.set_xticks(range(len(cluster_counts)))
-        ax6.set_xticklabels([f'C{i}' for i in cluster_counts.index])
-
-        # Ajout des valeurs sur les barres
-        for bar, count in zip(bars, cluster_counts.values):
-            ax6.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
-                     str(count), ha='center', va='bottom')
-
+        plt.xlabel('Nombre de clusters (K)')
+        plt.ylabel('Inertie')
+        plt.title('Méthode du Coude')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
         plt.tight_layout()
         plt.show()
 
+        # 2. Coefficient de silhouette
+        sil_data = self.metrics_results['silhouette']
+        plt.figure(figsize=(8, 6))
+        plt.plot(sil_data['k_values'], sil_data['scores'], 'go-', linewidth=2, markersize=8)
+        plt.axvline(x=sil_data['optimal_k'], color='red', linestyle='--', alpha=0.7,
+                    label=f'K optimal = {sil_data["optimal_k"]}')
+        plt.xlabel('Nombre de clusters (K)')
+        plt.ylabel('Score de Silhouette')
+        plt.title('Coefficient de Silhouette')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+        # 3. Indice de Calinski-Harabasz
+        ch_data = self.metrics_results['calinski_harabasz']
+        plt.figure(figsize=(8, 6))
+        plt.plot(ch_data['k_values'], ch_data['scores'], 'mo-', linewidth=2, markersize=8)
+        plt.axvline(x=ch_data['optimal_k'], color='red', linestyle='--', alpha=0.7,
+                    label=f'K optimal = {ch_data["optimal_k"]}')
+        plt.xlabel('Nombre de clusters (K)')
+        plt.ylabel('Score Calinski-Harabasz')
+        plt.title('Indice de Calinski-Harabasz')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+        # 4. Indice de Davies-Bouldin
+        db_data = self.metrics_results['davies_bouldin']
+        plt.figure(figsize=(8, 6))
+        plt.plot(db_data['k_values'], db_data['scores'], 'co-', linewidth=2, markersize=8)
+        plt.axvline(x=db_data['optimal_k'], color='red', linestyle='--', alpha=0.7,
+                    label=f'K optimal = {db_data["optimal_k"]}')
+        plt.xlabel('Nombre de clusters (K)')
+        plt.ylabel('Score Davies-Bouldin')
+        plt.title('Indice de Davies-Bouldin')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+        # 5. Visualisation des clusters (PCA 2D)
+        plt.figure(figsize=(8, 6))
+        if self.scaled_data.shape[1] > 2:
+            pca = PCA(n_components=2)
+            data_pca = pca.fit_transform(self.scaled_data)
+            scatter = plt.scatter(data_pca[:, 0], data_pca[:, 1], c=self.cluster_labels, cmap='viridis', alpha=0.7)
+            plt.xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.2%} variance)')
+            plt.ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.2%} variance)')
+            plt.title('Clusters (PCA 2D)')
+            plt.colorbar(scatter)
+        else:
+            plt.scatter(self.scaled_data[:, 0], self.scaled_data[:, 1], c=self.cluster_labels, cmap='viridis',
+                        alpha=0.7)
+            plt.xlabel('Feature 1')
+            plt.ylabel('Feature 2')
+            plt.title('Clusters')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.show()
         print("✓ Graphiques générés avec succès!")
+
+    from sklearn.cluster import KMeans
+    from sklearn.decomposition import PCA
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    def plot_kmeans_clusters_for_ks(self, k_values=[2, 3, 9]):
+        """
+        Affiche les clusters KMeans pour différentes valeurs de k
+        """
+        print(f"\nAffichage des clusters pour k = {k_values}...")
+
+        if self.scaled_data.shape[1] > 2:
+            pca = PCA(n_components=2)
+            reduced_data = pca.fit_transform(self.scaled_data)
+            x_label = f'PC1 ({pca.explained_variance_ratio_[0]:.2%} variance)'
+            y_label = f'PC2 ({pca.explained_variance_ratio_[1]:.2%} variance)'
+        else:
+            reduced_data = self.scaled_data
+            x_label = 'Feature 1'
+            y_label = 'Feature 2'
+
+        for k in k_values:
+            kmeans = KMeans(n_clusters=k, random_state=42, n_init='auto')
+            labels = kmeans.fit_predict(self.scaled_data)
+            centers = kmeans.cluster_centers_
+            centers_reduced = PCA(n_components=2).fit_transform(centers) if self.scaled_data.shape[1] > 2 else centers
+
+            plt.figure(figsize=(8, 6))
+            colors = plt.cm.get_cmap('Set3', k)
+
+            for i in range(k):
+                plt.scatter(reduced_data[labels == i, 0],
+                            reduced_data[labels == i, 1],
+                            s=50,
+                            label=f'Cluster {i}',
+                            color=colors(i),
+                            alpha=0.7)
+
+            plt.title(f'K-Means avec k = {k}')
+            plt.xlabel(x_label)
+            plt.ylabel(y_label)
+            plt.legend()
+            plt.grid(True, alpha=0.3)
+            plt.tight_layout()
+            plt.show()
 
     def get_cluster_insights(self):
         """
@@ -462,6 +494,8 @@ class KMeansAnalyzer:
 
         # 5. Visualisations
         self.create_visualizations()
+
+        self.plot_kmeans_clusters_for_ks([2, 3, 9])
 
         # 6. Génération d'insights
         insights = self.get_cluster_insights()
