@@ -6,3 +6,8 @@ seaborn
 scikit-learn
 plotly
 dotenv
+uvicorn[standard]==0.22.0
+apscheduler==3.10.1
+fastapi==0.95.2
+pydantic==1.10.13
+jinja2==3.1.2
