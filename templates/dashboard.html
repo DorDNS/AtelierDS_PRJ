@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <title>Dashboard de Vulnérabilités</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .btn-preferences {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1050;
+        }
+    </style>
 </head>
 <body class="bg-light">
+    <a href="/preferences" class="btn btn-primary btn-preferences">⚙️ Préférences</a>
+
     <div class="container py-5">
         <h1 class="mb-4">🛡️ Alertes de sécurité critiques</h1>
         {% if df|length == 0 %}
@@ -21,18 +31,25 @@
                         <th>EPSS</th>
                         <th>Description</th>
                         <th>Lien</th>
+                        <th>Action</th>  <!-- Colonne bouton -->
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in df %}
                     <tr>
-                        <td>{{ row.date[:10] }}</td>
+                        <td>{{ row.date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ row.produit }}</td>
                         <td>{{ row.cve }}</td>
                         <td>{{ row.cvss_score }}</td>
                         <td>{{ row.epss_score }}</td>
-                        <td>{{ row.description[:100] }}...</td>
+                        <td>{{ row.description|string|truncate(100, True, '...') }}</td>
                         <td><a href="{{ row.lien }}" target="_blank">Lien</a></td>
+                        <td>
+                            <form method="post" action="/send-alert-mail" style="margin:0;">
+                                <input type="hidden" name="cve" value="{{ row.cve }}">
+                                <button type="submit" class="btn btn-primary btn-sm">Envoyer mail</button>
+                            </form>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
