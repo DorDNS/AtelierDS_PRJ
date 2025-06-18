@@ -34,3 +34,8 @@ data/raw/
 ├── mitre/
 └── first/
 ```
+
+
+## Pour lancer le dashboard
+
+uvicorn src.dashboard_vuln_alerts:app --reload

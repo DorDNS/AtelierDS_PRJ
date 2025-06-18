@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Préférences utilisateur</title>
+</head>
+<body>
+    <h1>Modifier les préférences utilisateur</h1>
+    <form action="/preferences" method="post">
+        <label for="email">Email de réception:</label><br>
+        <input type="email" id="email" name="email" value="{{ email }}" required><br><br>
+
+        <label for="cvss">Seuil CVSS (ex: 7.0):</label><br>
+        <input type="number" id="cvss" name="cvss" step="0.1" min="0" max="10" value="{{ cvss }}" required><br><br>
+
+        <label for="epss">Seuil EPSS (ex: 0.5):</label><br>
+        <input type="number" id="epss" name="epss" step="0.01" min="0" max="1" value="{{ epss }}" required><br><br>
+
+        <label for="vendor">Filtrer par fournisseur :</label><br>
+        <select name="vendor" id="vendor">
+            <option value="">Tous</option>
+            {% for vendor in vendors %}
+                <option value="{{ vendor }}" {% if vendor == selected_vendor %}selected{% endif %}>{{ vendor }}</option>
+            {% endfor %}
+            </select><br><br>
+        <button type="submit">Enregistrer</button>
+    </form>
+    <p><a href="/">Retour au dashboard</a></p>
+</body>
+</html>
