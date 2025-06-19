@@ -13,10 +13,10 @@ load_dotenv()
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_PASSWORD = os.getenv('GMAIL_APP_PASSWORD')
-EMAIL_SENDER = "burkovic.matthieu@gmail.com"
-EMAIL_RECEIVER = "matthieu.burkovic@efrei.net"
+EMAIL_SENDER = "thomas.fischer67270@gmail.com"
+EMAIL_RECEIVER = "thomas.fischer@efrei.net"
 
-def filtrer_alertes(df, produits_cibles, seuil_cvss=7.0, seuil_epss=0.7):
+def filtrer_alertes(df, produits_cibles, seuil_cvss=7.0, seuil_epss=0.2):
     """
     Filtre le DataFrame pour ne garder que les vulnérabilités critiques/à risque élevé
     et qui concernent les produits cibles.
@@ -77,7 +77,7 @@ def charger_et_filtrer_donnees(csv_path, produits_cibles, seuil_cvss=7.0):
 
     # Filtrer sur les deux derniers jours
     maintenant = datetime.now()
-    il_y_a_2_jours = maintenant - timedelta(days=2)
+    il_y_a_2_jours = maintenant - timedelta(days=64)
     df_recent = df[df["date"] >= il_y_a_2_jours]
 
     # Filtrer les vulnérabilités critiques et produits cibles

@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import Form
 from fastapi.responses import RedirectResponse
+from pathlib import Path
+
 
 
 # --- CONFIGURATION ---
@@ -26,6 +28,7 @@ EMAIL_SENDER = "burkovic.matthieu@gmail.com"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+static_dir = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # --- UTILISATEUR (Simulé en mémoire) ---

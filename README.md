@@ -38,4 +38,9 @@ data/raw/
 
 ## Pour lancer le dashboard
 
+Créer un dossier nommé "static" si il n'existe pas dans le projet (en-dehors de tout dossier)
+
+télécharger : pip install python-multipart
+
+Finalement : 
 uvicorn src.dashboard_vuln_alerts:app --reload
