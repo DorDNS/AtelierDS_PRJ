@@ -38,9 +38,13 @@ data/raw/
 
 ## Pour lancer le dashboard
 
-Créer un dossier nommé "static" si il n'existe pas dans le projet (en-dehors de tout dossier)
+Créer un dossier nommé "static" si il n'existe pas dans le projet (en-dehors de tout dossier) : mkdir static
+
+Suivez ce lien pour créer le mot de passe de l'application d'envoie d'email (n'oublier pas d'activer l'authentification à double facteur) : https://myaccount.google.com/apppasswords
+
+Créer un fichier .env dans le dossier "src" avec votre mot de passe. Ecrivez : GMAIL_APP_PASSWORD=votrecode
 
 télécharger : pip install python-multipart
 
-Finalement : 
+Finalement copiez ceci dans votre console: 
 uvicorn src.dashboard_vuln_alerts:app --reload
