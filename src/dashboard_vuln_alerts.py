@@ -24,7 +24,7 @@ CSV_PATH = "data/processed/final_dataset.csv"
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
-EMAIL_SENDER = "burkovic.matthieu@gmail.com"
+EMAIL_SENDER = "votre_gmail@gmail.com" # Remplacez par votre adresse email
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -33,7 +33,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # --- UTILISATEUR (Simulé en mémoire) ---
 user_preferences = {
-    "email": "matthieu.burkovic@efrei.net",
+    "email": "votre_mail@gmail.com", # Remplacez par l'adresse email du destinataire,
     "cvss": 7.0,
     "epss": 0.5,
     "vendor": "Tous"

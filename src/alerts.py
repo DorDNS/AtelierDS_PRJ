@@ -13,8 +13,8 @@ load_dotenv()
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_PASSWORD = os.getenv('GMAIL_APP_PASSWORD')
-EMAIL_SENDER = "thomas.fischer67270@gmail.com"
-EMAIL_RECEIVER = "thomas.fischer@efrei.net"
+EMAIL_SENDER = "votre_gmail@gmail.com"  # Remplacez par votre adresse email
+EMAIL_RECEIVER = "votre_mail@gmail.com"  # Remplacez par l'adresse email du destinataire
 
 def filtrer_alertes(df, produits_cibles, seuil_cvss=7.0, seuil_epss=0.2):
     """

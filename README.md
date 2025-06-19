@@ -44,6 +44,8 @@ Suivez ce lien pour créer le mot de passe de l'application d'envoie d'email (n'
 
 Créer un fichier .env dans le dossier "src" avec votre mot de passe. Ecrivez : GMAIL_APP_PASSWORD=votrecode
 
+Remplacer dans les fichiers, alerts.py et dashboard_vuln_alerts.py, les mail d'envoyeur et de receveur.
+
 télécharger : pip install python-multipart
 
 Finalement copiez ceci dans votre console: 
